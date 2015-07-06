@@ -15,13 +15,9 @@ module PandocFilter
     if ARGV.length > 1
       @format = ARGV[1]
     end
-    #???
-    #altered = walk(doc, action, format, doc[0]['unMeta'])
-    #altered = yield('k','v','f','m')
     @block = block
     @meta = doc[0]['unMeta']
-    altered = walk(doc)
-    $stdout.puts JSON.dump(altered)
+    $stdout.puts JSON.dump(walk(doc))
   end
 
   def self.walk(x)
