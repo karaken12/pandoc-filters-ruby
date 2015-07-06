@@ -5,8 +5,8 @@ require 'pandoc-filter'
 class CommentFilter
   @incomment = false
 
-  def comment(key, value, format, meta)
-    if key == 'RawBlock'
+  def comment(type, value, format, meta)
+    if type == 'RawBlock'
       fmt = value[0]
       s = value[1]
       if fmt == 'html'
@@ -28,6 +28,6 @@ end
 
 filter = CommentFilter.new
 
-PandocFilter.filter do |key,value,format,meta|
-  filter.comment(key,value,format,meta)
+PandocFilter.filter do |type,value,format,meta|
+  filter.comment(type,value,format,meta)
 end
