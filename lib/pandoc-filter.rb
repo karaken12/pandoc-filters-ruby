@@ -68,7 +68,7 @@ module PandocElement
     ['Div', 2],
     ['Null', 0],
     ['Str', 1],
-    ['Emp', 1],
+    ['Emph', 1],
     ['Strong', 1],
     ['Strikeout', 1],
     ['Superscript', 1],
@@ -78,11 +78,12 @@ module PandocElement
     ['Cite', 2],
     ['Code', 2],
     ['Space', 0],
+    ['SoftBreak', 0],
     ['LineBreak', 0],
     ['Math', 2],
     ['RawInline', 2],
-    ['Link', 2],
-    ['Image', 2],
+    ['Link', 3],
+    ['Image', 3],
     ['Note', 1],
     ['Span', 2]
   ].each do |name, params|
