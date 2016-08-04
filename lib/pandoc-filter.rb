@@ -54,53 +54,90 @@ module PandocFilter
 end
 
 module PandocElement
-  [ ['Plain', 1],
-    ['Para', 1],
-    ['CodeBlock', 2],
-    ['RawBlock', 2],
-    ['BlockQuote', 1],
-    ['OrderedList', 2],
-    ['BulletList', 1],
-    ['DefinitionList', 1],
-    ['Header', 3],
-    ['HorizontalRule', 0],
-    ['Table', 5],
-    ['Div', 2],
-    ['Null', 0],
-    ['Str', 1],
-    ['Emph', 1],
-    ['Strong', 1],
-    ['Strikeout', 1],
-    ['Superscript', 1],
-    ['Subscript', 1],
-    ['SmallCaps', 1],
-    ['Quoted', 2],
-    ['Cite', 2],
-    ['Code', 2],
-    ['Space', 0],
-    ['SoftBreak', 0],
-    ['LineBreak', 0],
-    ['Math', 2],
-    ['RawInline', 2],
-    ['Link', 3],
-    ['Image', 3],
-    ['Note', 1],
-    ['Span', 2]
-  ].each do |name, params|
-    if params == 0
+  def self.to_ast(object)
+    if object.respond_to?(:to_ast)
+      object.to_ast
+    elsif object.kind_of?(Array)
+      object.map { |x| to_ast(x) }
+    elsif object.kind_of?(Hash)
+      result = {}
+      object.each { |key, value| result[key] = to_ast(value) }
+      result
+    else
+      object
+    end
+  end
+
+  class Base
+    attr_reader :contents
+
+    def initialize(contents = [])
+      @contents = contents
+    end
+
+    def to_ast
+      { 't' => element_name, 'c' => PandocElement.to_ast(contents) }
+    end
+  end
+
+  [ ['Plain', :elements],
+    ['Para', :elements],
+    ['CodeBlock', :attributes, :value],
+    ['RawBlock', :format, :value],
+    ['BlockQuote', :elements],
+    ['OrderedList', :attributes, :elements],
+    ['BulletList', :elements],
+    ['DefinitionList', :elements],
+    ['Header', :level, :attributes, :elements],
+    ['HorizontalRule'],
+    ['Table', :captions, :alignments, :widths, :headers, :rows],
+    ['Div', :attributes, :elements],
+    ['Null'],
+    ['Str', :value],
+    ['Emph', :elements],
+    ['Strong', :elements],
+    ['Strikeout', :elements],
+    ['Superscript', :elements],
+    ['Subscript', :elements],
+    ['SmallCaps', :elements],
+    ['Quoted', :type, :elements],
+    ['Cite', :citations, :elements],
+    ['Code', :attributes, :value],
+    ['Space'],
+    ['SoftBreak'],
+    ['LineBreak'],
+    ['Math', :type, :value],
+    ['RawInline', :format, :value],
+    ['Link', :attributes, :elements, :target],
+    ['Image', :attributes, :elements, :target],
+    ['Note', :elements],
+    ['Span', :attributes, :elements]
+  ].each do |name, *params|
+    case params.size
+    when 0
       define_singleton_method(name) { {'t'=>name, 'c'=>[]} }
-    elsif params == 1
+    when 1
       define_singleton_method(name) { |value| {'t'=>name, 'c'=>value} }
-    elsif params == 2
+    when 2
       define_singleton_method(name) { |v1,v2| {'t'=>name, 'c'=>[v1,v2]} }
-    elsif params == 3
+    when 3
       define_singleton_method(name) { |v1,v2,v3| {'t'=>name, 'c'=>[v1,v2,v3]} }
-    elsif params == 4
+    when 4
       define_singleton_method(name) { |v1,v2,v3,v4| {'t'=>name, 'c'=>[v1,v2,v3,v4]} }
-    elsif params == 5
+    when 5
       define_singleton_method(name) { |v1,v2,v3,v4,v5| {'t'=>name, 'c'=>[v1,v2,v3i,v4,v5]} }
     else
-      puts "Error!"
+      raise "Too many parameters!"
     end
+
+    const_set(name, Class.new(PandocElement::Base) {
+      if params.size == 1
+        define_method(params.first) { contents }
+      else
+        params.each_with_index { |param, index| define_method(param) { contents[index] } }
+      end
+
+      define_method(:element_name) { name }
+    })
   end
 end
