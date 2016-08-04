@@ -68,6 +68,23 @@ module PandocElement
     end
   end
 
+  def self.to_object(object)
+    if object.kind_of?(Array)
+      object.map { |x| to_object(x) }
+    elsif object.kind_of?(Hash) && object.include?('t') && object.include?('c')
+      raise "Unknown type: #{object['t']}" unless PandocElement.const_defined?(object['t'])
+      type = PandocElement.const_get(object['t'])
+      raise "Invalid type: #{object['t']}" unless type < PandocElement::Base
+      type.new(to_object(object['c']))
+    elsif object.kind_of?(Hash)
+      result = {}
+      object.each { |key, value| result[key] = to_object(value) }
+      result
+    else
+      object
+    end
+  end
+
   class Base
     attr_reader :contents
 
@@ -77,6 +94,10 @@ module PandocElement
 
     def to_ast
       { 't' => element_name, 'c' => PandocElement.to_ast(contents) }
+    end
+
+    def ==(other)
+      self.class == other.class && contents == other.contents
     end
   end
 
@@ -113,6 +134,8 @@ module PandocElement
     ['Note', :elements],
     ['Span', :attributes, :elements]
   ].each do |name, *params|
+    name.freeze
+
     case params.size
     when 0
       define_singleton_method(name) { {'t'=>name, 'c'=>[]} }
