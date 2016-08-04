@@ -8,16 +8,16 @@ require 'json'
 
 module PandocFilter
 
-  def self.filter(&block)
+  def self.filter(input = $stdin, output = $stdout, &block)
     # maybe not the right call?
-    doc = JSON.parse($stdin.read)
+    doc = JSON.parse(input.read)
     format = nil
     if ARGV.length > 1
       @format = ARGV[1]
     end
     @block = block
     @meta = doc[0]['unMeta']
-    $stdout.puts JSON.dump(walk(doc))
+    output.puts JSON.dump(walk(doc))
   end
 
   def self.walk(x)

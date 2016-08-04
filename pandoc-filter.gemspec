@@ -9,4 +9,5 @@ Gem::Specification.new do |s|
   s.files       = ['lib/pandoc-filter.rb']
   s.homepage    = 'https://github.com/karaken12/pandoc-filters-ruby'
   s.license     = 'MIT'
+  s.add_development_dependency 'minitest', '~> 5.9'
 end
