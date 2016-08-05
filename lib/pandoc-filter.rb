@@ -6,21 +6,27 @@
 
 require 'json'
 
-module PandocFilter
+class PandocFilter
+  attr_accessor :format, :meta
 
-  def self.filter(input = $stdin, output = $stdout, &block)
-    # maybe not the right call?
-    doc = JSON.parse(input.read)
-    format = nil
-    if ARGV.length > 1
-      @format = ARGV[1]
-    end
+  def initialize(input = $stdin, output = $stdout, &block)
+    @input = input
+    @output = output
     @block = block
-    @meta = doc[0]['unMeta']
-    output.puts JSON.dump(walk(doc))
   end
 
-  def self.walk(x)
+  def self.filter(input = $stdin, output = $stdout, &block)
+    new(input, output, &block).filter
+  end
+
+  def filter
+    doc = JSON.parse(@input.read)
+    @format = ARGV.first
+    @meta = doc[0]['unMeta']
+    @output.puts JSON.dump(walk(doc))
+  end
+
+  def walk(x)
     if x.kind_of?(Array)
       result = []
       x.each do |item|
