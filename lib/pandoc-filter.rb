@@ -94,6 +94,7 @@ module PandocElement
 
     def initialize(contents = [])
       @contents = contents
+      convert_contents if respond_to?(:convert_contents, true)
     end
 
     def to_ast
@@ -144,16 +145,16 @@ module PandocElement
 
   [ ['Plain',          :elements,                                        { include: [PandocElement::Block] }],
     ['Para',           :elements,                                        { include: [PandocElement::Block] }],
-    ['CodeBlock',      :attributes, :value,                              { include: [PandocElement::Block] }],
+    ['CodeBlock',      :attributes, :value,                              { include: [PandocElement::Block], conversions: { attributes: PandocElement::Attr } }],
     ['RawBlock',       :format, :value,                                  { include: [PandocElement::Block] }],
     ['BlockQuote',     :elements,                                        { include: [PandocElement::Block] }],
     ['OrderedList',    :attributes, :elements,                           { include: [PandocElement::Block] }],
     ['BulletList',     :elements,                                        { include: [PandocElement::Block] }],
     ['DefinitionList', :elements,                                        { include: [PandocElement::Block] }],
-    ['Header',         :level, :attributes, :elements,                   { include: [PandocElement::Block] }],
+    ['Header',         :level, :attributes, :elements,                   { include: [PandocElement::Block], conversions: { attributes: PandocElement::Attr } }],
     ['HorizontalRule',                                                   { include: [PandocElement::Block] }],
     ['Table',          :captions, :alignments, :widths, :headers, :rows, { include: [PandocElement::Block] }],
-    ['Div',            :attributes, :elements,                           { include: [PandocElement::Block] }],
+    ['Div',            :attributes, :elements,                           { include: [PandocElement::Block], conversions: { attributes: PandocElement::Attr } }],
     ['Null',                                                             { include: [PandocElement::Block] }],
     ['Str',            :value,                                           { include: [PandocElement::Inline] }],
     ['Emph',           :elements,                                        { include: [PandocElement::Inline] }],
@@ -164,16 +165,16 @@ module PandocElement
     ['SmallCaps',      :elements,                                        { include: [PandocElement::Inline] }],
     ['Quoted',         :type, :elements,                                 { include: [PandocElement::Inline] }],
     ['Cite',           :citations, :elements,                            { include: [PandocElement::Inline] }],
-    ['Code',           :attributes, :value,                              { include: [PandocElement::Inline] }],
+    ['Code',           :attributes, :value,                              { include: [PandocElement::Inline], conversions: { attributes: PandocElement::Attr } }],
     ['Space',                                                            { include: [PandocElement::Inline] }],
     ['SoftBreak',                                                        { include: [PandocElement::Inline] }],
     ['LineBreak',                                                        { include: [PandocElement::Inline] }],
     ['Math',           :type, :value,                                    { include: [PandocElement::Inline] }],
     ['RawInline',      :format, :value,                                  { include: [PandocElement::Inline] }],
-    ['Link',           :attributes, :elements, :target,                  { include: [PandocElement::Inline] }],
-    ['Image',          :attributes, :elements, :target,                  { include: [PandocElement::Inline] }],
+    ['Link',           :attributes, :elements, :target,                  { include: [PandocElement::Inline], conversions: { attributes: PandocElement::Attr, target: PandocElement::Target } }],
+    ['Image',          :attributes, :elements, :target,                  { include: [PandocElement::Inline], conversions: { attributes: PandocElement::Attr, target: PandocElement::Target } }],
     ['Note',           :elements,                                        { include: [PandocElement::Inline] }],
-    ['Span',           :attributes, :elements,                           { include: [PandocElement::Inline] }]
+    ['Span',           :attributes, :elements,                           { include: [PandocElement::Inline], conversions: { attributes: PandocElement::Attr } }]
   ].each do |name, *params|
     name.freeze
 
@@ -210,6 +211,22 @@ module PandocElement
       end
 
       define_method(:element_name) { name }
+
+      if options[:conversions]
+        private
+
+        define_method(:convert_contents) do
+          @contents = @contents.map.with_index do |x, index|
+            convert_to_type = options[:conversions][params[index]]
+
+            if convert_to_type && !x.kind_of?(convert_to_type)
+              convert_to_type.new(x)
+            else
+              x
+            end
+          end
+        end
+      end
     })
   end
 end

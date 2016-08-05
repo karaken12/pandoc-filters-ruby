@@ -52,4 +52,22 @@ class ToObjectsTest < Minitest::Test
 
     assert_equal(expected, actual)
   end
+
+  def test_link
+    expected = PandocElement::Link.new([
+      PandocElement::Attr.new(['id', ['class1', 'class2'], [['key1', 'value1'], ['key2', 'value2']]]),
+      [PandocElement::Str.new('link')],
+      PandocElement::Target.new(['http://example.com', 'This is the title'])
+    ])
+
+    actual = PandocElement.to_object(
+      't' => 'Link', 'c' => [
+        ['id', ['class1', 'class2'], [['key1', 'value1'], ['key2', 'value2']]],
+        [{ 't' => 'Str', 'c' => 'link' }],
+        ['http://example.com', 'This is the title']
+      ]
+    )
+
+    assert_equal(expected, actual)
+  end
 end
