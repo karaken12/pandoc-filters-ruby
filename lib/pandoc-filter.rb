@@ -88,8 +88,14 @@ module PandocElement
   class Base
     attr_reader :contents
 
-    def self.contents_attr(name, index)
-      define_method(name) { contents[index] }
+    def self.contents_attr(name, index = nil)
+      if index
+        define_method(name) { contents[index] }
+        define_method("#{name}=") { |value| contents[index] = value }
+      else
+        define_method(name) { contents }
+        define_method("#{name}=") { |value| @contents = value }
+      end
     end
 
     def initialize(contents = [])
@@ -124,17 +130,25 @@ module PandocElement
     contents_attr :key_values, 2
 
     def [](key)
-      key_values_hash[key]
+      # NOTE: While this pseudo Hash implementations are inefficient, they
+      # guarantee any changes to key_values will be honored, which would be
+      # difficult if the key_values were cached in a Hash
+      result = key_values.find { |pair| pair.first == key } || []
+      result[1]
+    end
+
+    def []=(key, value)
+      found = key_values.find { |pair| pair.first == key }
+
+      if found
+        found[1] = value
+      else
+        key_values << [key, value]
+      end
     end
 
     def include?(key)
-      key_values_hash.include?(key)
-    end
-
-    private
-
-    def key_values_hash
-      @key_values_hash ||= Hash[key_values]
+      !!key_values.find { |pair| pair.first == key }
     end
   end
 
@@ -205,7 +219,7 @@ module PandocElement
       (options[:include] || []).each { |mod| include mod }
 
       if params.size == 1
-        define_method(params.first) { contents }
+        contents_attr params.first
       else
         params.each_with_index { |param, index| contents_attr param, index }
       end

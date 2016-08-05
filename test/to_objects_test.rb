@@ -1,12 +1,14 @@
 require_relative 'test_helper'
 
 class ToObjectsTest < Minitest::Test
+  include PandocHelper
+
   def test_space
-    assert_equal(PandocElement::Space.new, PandocElement.to_object('t' => 'Space', 'c' => []))
+    assert_equal(PandocElement::Space.new, PandocElement.to_object(ast('Space')))
   end
 
   def test_str
-    assert_equal(PandocElement::Str.new('hello'), PandocElement.to_object('t' => 'Str', 'c' => 'hello'))
+    assert_equal(PandocElement::Str.new('hello'), PandocElement.to_object(ast('Str', 'hello')))
   end
 
   def test_with_array
@@ -16,18 +18,13 @@ class ToObjectsTest < Minitest::Test
       PandocElement::Str.new('world')
     ]
 
-    actual = PandocElement.to_object([
-      { 't' => 'Str', 'c' => 'hello' },
-      { 't' => 'Space', 'c' => [] },
-      { 't' => 'Str', 'c' => 'world' }
-    ])
-
+    actual = PandocElement.to_object([ast('Str', 'hello'), ast('Space'), ast('Str', 'world')])
     assert_equal(expected, actual)
   end
 
   def test_with_non_ast_hash
     expected = { 'x' => 'value', 'y' => PandocElement::Space.new }
-    actual = PandocElement.to_object('x' => 'value', 'y' => { 't' => 'Space', 'c' => [] })
+    actual = PandocElement.to_object('x' => 'value', 'y' => ast('Space'))
     assert_equal(expected, actual)
   end
 
@@ -42,14 +39,7 @@ class ToObjectsTest < Minitest::Test
       PandocElement::Str.new('world')
     ])
 
-    actual = PandocElement.to_object(
-      't' => 'Para', 'c' => [
-        { 't' => 'Str', 'c' => 'hello' },
-        { 't' => 'Space', 'c' => [] },
-        { 't' => 'Str', 'c' => 'world' }
-      ]
-    )
-
+    actual = PandocElement.to_object(ast('Para', [ast('Str', 'hello'), ast('Space'), ast('Str', 'world')]))
     assert_equal(expected, actual)
   end
 
@@ -60,13 +50,11 @@ class ToObjectsTest < Minitest::Test
       PandocElement::Target.new(['http://example.com', 'This is the title'])
     ])
 
-    actual = PandocElement.to_object(
-      't' => 'Link', 'c' => [
-        ['id', ['class1', 'class2'], [['key1', 'value1'], ['key2', 'value2']]],
-        [{ 't' => 'Str', 'c' => 'link' }],
-        ['http://example.com', 'This is the title']
-      ]
-    )
+    actual = PandocElement.to_object(ast('Link', [
+      ['id', ['class1', 'class2'], [['key1', 'value1'], ['key2', 'value2']]],
+      [ast('Str', 'link')],
+      ['http://example.com', 'This is the title']
+    ]))
 
     assert_equal(expected, actual)
   end

@@ -4,6 +4,11 @@ require 'stringio'
 require_relative '../lib/pandoc-filter'
 
 module PandocHelper
+  def ast(type, value = [])
+    { 't' => type, 'c' => value }
+  end
+
+
   def ast_to_stream(ast)
     StringIO.new(JSON.dump(ast))
   end
