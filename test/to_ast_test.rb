@@ -2,34 +2,30 @@ require_relative 'test_helper'
 
 class ToAstTest < Minitest::Test
   include PandocHelper
+  include PandocAstHelper
+  include PandocElementHelper
 
   def test_space
-    assert_equal(ast('Space'), PandocElement::Space.new.to_ast)
+    assert_equal(space_ast, space.to_ast)
   end
 
   def test_str
-    assert_equal(ast('Str', 'hello'), PandocElement::Str.new('hello').to_ast)
+    assert_equal(hello_str_ast, hello_str.to_ast)
   end
 
   def test_with_object
-    assert_equal(ast('Space'), PandocElement.to_ast(PandocElement::Space.new))
+    assert_equal(space_ast, PandocElement.to_ast(space))
   end
 
   def test_with_array
-    expected = [ast('Str', 'hello'), ast('Space'), ast('Str', 'world')]
-
-    actual = PandocElement.to_ast([
-      PandocElement::Str.new('hello'),
-      PandocElement::Space.new,
-      PandocElement::Str.new('world')
-    ])
-
+    expected = [hello_str_ast, space_ast, world_str_ast]
+    actual = PandocElement.to_ast([hello_str, space, world_str])
     assert_equal(expected, actual)
   end
 
   def test_with_hash
-    expected = { 'x' => 'value', 'y' => ast('Space') }
-    actual = PandocElement.to_ast('x' => 'value', 'y' => PandocElement::Space.new)
+    expected = { 'x' => 'value', 'y' => space_ast }
+    actual = PandocElement.to_ast('x' => 'value', 'y' => space)
     assert_equal(expected, actual)
   end
 
@@ -38,14 +34,8 @@ class ToAstTest < Minitest::Test
   end
 
   def test_para
-    expected = ast('Para', [ast('Str', 'hello'), ast('Space'), ast('Str', 'world')])
-
-    actual = PandocElement::Para.new([
-      PandocElement::Str.new('hello'),
-      PandocElement::Space.new,
-      PandocElement::Str.new('world')
-    ]).to_ast
-
+    expected = para_ast(hello_str_ast, space_ast, world_str_ast)
+    actual = para(hello_str, space, world_str).to_ast
     assert_equal(expected, actual)
   end
 

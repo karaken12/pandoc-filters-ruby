@@ -91,8 +91,53 @@ module PandocElement
     end
   end
 
+  def self.walk!(object, &block)
+    PandocElement::Walker.new(object, &block).walk!
+  end
+
+  class Walker
+    def initialize(object, &block)
+      @object = object
+      @block = block
+    end
+
+    def walk!(object = @object)
+      if object.kind_of?(Array)
+        result = []
+        object.each do |item|
+          if item.kind_of?(PandocElement::BaseElement)
+            res = @block.call(item)
+            if !res
+              result.push(walk!(item))
+            elsif res.kind_of?(Array)
+              res.each do |z|
+                result.push(walk!(z))
+              end
+            else
+              result.push(walk!(res))
+            end
+          else
+            result.push(walk!(item))
+          end
+        end
+        return result
+      elsif object.kind_of?(Hash)
+        result = {}
+        object.each do |key, value|
+          result[key] = walk!(value)
+        end
+        return result
+      elsif object.kind_of?(PandocElement::Base)
+        object.contents = walk!(object.contents)
+        return object
+      else
+        return object
+      end
+    end
+  end
+
   class Base
-    attr_reader :contents
+    attr_accessor :contents
 
     def self.contents_attr(name, index = nil)
       if index
@@ -115,6 +160,10 @@ module PandocElement
 
     def ==(other)
       self.class == other.class && contents == other.contents
+    end
+
+    def walk!(&block)
+      PandocElement.walk!(self, &block)
     end
   end
 

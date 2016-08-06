@@ -2,26 +2,23 @@ require_relative 'test_helper'
 
 class ChangeAttributesTest < Minitest::Test
   include PandocHelper
+  include PandocAstHelper
+  include PandocElementHelper
 
   def test_str
-    str = PandocElement::Str.new('hello')
+    str = hello_str
     str.value.upcase!
     assert_equal(ast('Str', 'HELLO'), str.to_ast)
     str.value = 'world'
-    assert_equal(ast('Str', 'world'), str.to_ast)
+    assert_equal(world_str_ast, str.to_ast)
   end
 
   def test_para
-    para = PandocElement::Para.new([
-      PandocElement::Str.new('hello'),
-      PandocElement::Space.new,
-      PandocElement::Str.new('world')
-    ])
-
+    para = para(hello_str, space, world_str)
     para.elements.pop
-    assert_equal(ast('Para', [ast('Str', 'hello'), ast('Space')]), para.to_ast)
+    assert_equal(para_ast(hello_str_ast, space_ast), para.to_ast)
     para.elements = [PandocElement::Str.new('goodnight')]
-    assert_equal(ast('Para', [ast('Str', 'goodnight')]), para.to_ast)
+    assert_equal(para_ast(ast('Str', 'goodnight')), para.to_ast)
   end
 
   def test_link

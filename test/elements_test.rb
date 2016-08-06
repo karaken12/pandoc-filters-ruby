@@ -1,27 +1,24 @@
 require_relative 'test_helper'
 
 class ElementsTest < Minitest::Test
+  include PandocElementHelper
+
   def test_space
-    space = PandocElement::Space.new
-    assert_equal([], space.contents)
-    assert space.kind_of?(PandocElement::Inline)
+    element = space
+    assert_equal([], element.contents)
+    assert element.kind_of?(PandocElement::Inline)
   end
 
   def test_str
-    str = PandocElement::Str.new('hello')
+    str = hello_str
     assert_equal('hello', str.contents)
     assert_equal('hello', str.value)
     assert str.kind_of?(PandocElement::Inline)
   end
 
   def test_para
-    elements = [
-      PandocElement::Str.new('hello'),
-      PandocElement::Space.new,
-      PandocElement::Str.new('world')
-    ]
-
-    para = PandocElement::Para.new(elements)
+    elements = [hello_str, space, world_str]
+    para = para(*elements)
     assert_equal(elements, para.contents)
     assert_equal(elements, para.elements)
     assert para.kind_of?(PandocElement::Block)
