@@ -91,6 +91,10 @@ module PandocElement
     end
   end
 
+  def self.walk(object, &block)
+    PandocElement::Walker.new(object, &block).walk
+  end
+
   def self.walk!(object, &block)
     PandocElement::Walker.new(object, &block).walk!
   end
@@ -99,6 +103,26 @@ module PandocElement
     def initialize(object, &block)
       @object = object
       @block = block
+    end
+
+    def walk(object = @object)
+      if object.kind_of?(Array)
+        object.each do |item|
+          if item.kind_of?(PandocElement::BaseElement)
+            @block.call(item)
+          end
+
+          walk(item)
+        end
+      elsif object.kind_of?(Hash)
+        object.values.each do |value|
+          walk(value)
+        end
+      elsif object.kind_of?(PandocElement::Base)
+        walk(object.contents)
+      end
+
+      object
     end
 
     def walk!(object = @object)
@@ -158,8 +182,16 @@ module PandocElement
       PandocElement.to_ast(contents)
     end
 
+    def inspect
+      to_ast.inspect
+    end
+
     def ==(other)
       self.class == other.class && contents == other.contents
+    end
+
+    def walk(&block)
+      PandocElement.walk(self, &block)
     end
 
     def walk!(&block)
