@@ -18,10 +18,17 @@ module PandocHelper
   end
 
   def to_pandoc_ast(markdown, strip: true)
-    markdown = strip_whitespace(markdown) if strip
-    output, status = Open3.capture2('pandoc -f markdown -t json -s', stdin_data: markdown)
+    JSON.parse pandoc(markdown, to: "json")
+  end
+
+  def pandoc(content, filter: nil, from: "markdown", to: "markdown", strip: true, standalone: true)
+    content = strip_whitespace(content) if strip
+    options = ["-f #{from}", "-t #{to}"]
+    options << "-s" if standalone
+    options << "--filter '#{filter}'" if filter
+    output, status = Open3.capture2({ "RUBYLIB" => File.expand_path("../../lib", __FILE__)}, "pandoc #{options.join(" ")}", stdin_data: content)
     raise 'Error capturing pandoc output!' unless status.success?
-    JSON.parse(output)
+    output
   end
 end
 
