@@ -99,6 +99,28 @@ module PandocElement
     PandocElement::Walker.new(object, &block).walk!
   end
 
+  def self.filter(input = $stdin, output = $stdout, &block)
+    PandocElement::Filter.new(input, output, &block).filter
+  end
+
+  class Filter
+    attr_accessor :format, :meta
+
+    def initialize(input = $stdin, output = $stdout, &block)
+      @input = input
+      @output = output
+      @block = block
+    end
+
+    def filter
+      doc = PandocElement.to_object(JSON.parse(@input.read))
+      @format = ARGV.first
+      @meta = doc[0]['unMeta']
+      result = PandocElement.walk!(doc, &@block)
+      @output.puts JSON.dump(PandocElement.to_ast(result))
+    end
+  end
+
   class Walker
     def initialize(object, &block)
       @object = object
