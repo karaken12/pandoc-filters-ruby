@@ -82,4 +82,21 @@ class ChangeAttributesTest < Minitest::Test
     assert_equal(['id', ['class'], [['key', 'value3'], ['key', 'value2']]], attr.to_ast)
     assert attr.include?('key')
   end
+
+  def test_build_attr
+    attr = PandocElement::Attr.build(identifier: 'id', classes: ['class'], key_values: [['key1', 'value1'], ['key2', 'value2']])
+    assert_equal(['id', ['class'], [['key1', 'value1'], ['key2', 'value2']]], attr.to_ast)
+  end
+
+  def test_build_attr_with_key_values_hash
+    attr = PandocElement::Attr.build(identifier: 'id', classes: ['class'], key_values: { 'key1' => 'value1', 'key2' => 'value2' })
+    assert_equal(['id', ['class'], [['key1', 'value1'], ['key2', 'value2']]], attr.to_ast)
+  end
+
+  def test_build_without_all_attributes
+    assert_equal(['', [], []], PandocElement::Attr.build().to_ast)
+    assert_equal(['id', [], []], PandocElement::Attr.build(identifier: 'id').to_ast)
+    assert_equal(['', ['class'], []], PandocElement::Attr.build(classes: ['class']).to_ast)
+    assert_equal(['', [], [['key', 'value']]], PandocElement::Attr.build(key_values: { 'key' => 'value' }).to_ast)
+  end
 end

@@ -89,4 +89,31 @@ class ExamplesTest < Minitest::Test
     assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/deflists.rb", __FILE__)))
     assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/deflists_object.rb", __FILE__)))
   end
+
+  def test_metavars
+    doc = <<-EOF
+      ---
+      author: Caleb Hyde
+      ---
+
+      # %{author}
+
+      This was written by %{author}
+    EOF
+
+    expected_result = strip_whitespace <<-EOF
+      ---
+      author: Caleb Hyde
+      ...
+
+      <span class="interpolated" field="author">Caleb Hyde</span> {#author}
+      ===========================================================
+
+      This was written by <span class="interpolated" field="author">Caleb
+      Hyde</span>
+    EOF
+
+    assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars.rb", __FILE__)))
+    #assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars_object.rb", __FILE__)))
+  end
 end

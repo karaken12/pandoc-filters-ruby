@@ -82,6 +82,8 @@ module PandocElement
       type = PandocElement.const_get(object['t'])
       raise "Invalid type: #{object['t']}" unless type < PandocElement::BaseElement
       type.new(to_object(object['c']))
+    elsif object.kind_of?(Hash) && object.include?('unMeta')
+      PandocElement::Meta.new(to_object(object['unMeta']))
     elsif object.kind_of?(Hash)
       result = {}
       object.each { |key, value| result[key] = to_object(value) }
@@ -113,9 +115,9 @@ module PandocElement
     end
 
     def filter
-      doc = PandocElement.to_object(JSON.parse(@input.read))
+      doc = PandocElement::Document.new(JSON.parse(@input.read))
       @format = ARGV.first
-      @meta = doc[0]['unMeta']
+      @meta = doc.meta
       result = PandocElement.walk!(doc, &@block)
       @output.puts JSON.dump(PandocElement.to_ast(result))
     end
@@ -227,16 +229,68 @@ module PandocElement
     end
   end
 
+  module Enum
+    def [](key)
+      elements[key]
+    end
+
+    def []=(key, value)
+      elements[key] = value
+    end
+  end
+
+  module MetaValue
+  end
+
   module Inline
   end
 
   module Block
   end
 
+  class Document < PandocElement::Base
+    attr_reader :meta
+
+    def initialize(ast)
+      object = PandocElement.to_object(ast)
+      @meta = object[0]
+      @contents = object[1]
+    end
+
+    def to_ast
+      [meta.to_ast, PandocElement.to_ast(contents)]
+    end
+  end
+
+  class Meta < PandocElement::Base
+    include PandocElement::Enum
+    alias_method :elements, :contents
+
+    def initialize(contents = {})
+      super
+    end
+
+    def to_ast
+      { 'unMeta' => PandocElement.to_ast(contents) }
+    end
+  end
+
   class Attr < PandocElement::Base
     contents_attr :identifier, 0
     contents_attr :classes, 1
     contents_attr :key_values, 2
+
+    def self.build(options = {})
+      id = options.fetch(:identifier, '')
+      classes = options.fetch(:classes, [])
+      key_values = options.fetch(:key_values, [])
+
+      if key_values.kind_of?(Hash)
+        key_values = key_values.to_a
+      end
+
+      new([id, classes, key_values])
+    end
 
     def [](key)
       # NOTE: While this pseudo Hash implementations are inefficient, they
@@ -266,38 +320,44 @@ module PandocElement
     contents_attr :title, 1
   end
 
-  [ ['Plain',          :elements,                                        { include: [PandocElement::Block] }],
-    ['Para',           :elements,                                        { include: [PandocElement::Block] }],
+  [ ['MetaMap',        :elements,                                        { include: [PandocElement::MetaValue, PandocElement::Enum] }],
+    ['MetaList',       :elements,                                        { include: [PandocElement::MetaValue, PandocElement::Enum] }],
+    ['MetaBool',       :value,                                           { include: [PandocElement::MetaValue] }],
+    ['MetaString',     :value,                                           { include: [PandocElement::MetaValue] }],
+    ['MetaInlines',    :elements,                                        { include: [PandocElement::MetaValue, PandocElement::Enum] }],
+    ['MetaBlocks',     :elements,                                        { include: [PandocElement::MetaValue, PandocElement::Enum] }],
+    ['Plain',          :elements,                                        { include: [PandocElement::Block, PandocElement::Enum] }],
+    ['Para',           :elements,                                        { include: [PandocElement::Block, PandocElement::Enum] }],
     ['CodeBlock',      :attributes, :value,                              { include: [PandocElement::Block], conversions: { attributes: PandocElement::Attr } }],
     ['RawBlock',       :format, :value,                                  { include: [PandocElement::Block] }],
-    ['BlockQuote',     :elements,                                        { include: [PandocElement::Block] }],
-    ['OrderedList',    :attributes, :elements,                           { include: [PandocElement::Block] }],
-    ['BulletList',     :elements,                                        { include: [PandocElement::Block] }],
-    ['DefinitionList', :elements,                                        { include: [PandocElement::Block] }],
-    ['Header',         :level, :attributes, :elements,                   { include: [PandocElement::Block], conversions: { attributes: PandocElement::Attr } }],
+    ['BlockQuote',     :elements,                                        { include: [PandocElement::Block, PandocElement::Enum] }],
+    ['OrderedList',    :attributes, :elements,                           { include: [PandocElement::Block, PandocElement::Enum] }],
+    ['BulletList',     :elements,                                        { include: [PandocElement::Block, PandocElement::Enum] }],
+    ['DefinitionList', :elements,                                        { include: [PandocElement::Block, PandocElement::Enum] }],
+    ['Header',         :level, :attributes, :elements,                   { include: [PandocElement::Block, PandocElement::Enum], conversions: { attributes: PandocElement::Attr } }],
     ['HorizontalRule',                                                   { include: [PandocElement::Block] }],
     ['Table',          :captions, :alignments, :widths, :headers, :rows, { include: [PandocElement::Block] }],
-    ['Div',            :attributes, :elements,                           { include: [PandocElement::Block], conversions: { attributes: PandocElement::Attr } }],
+    ['Div',            :attributes, :elements,                           { include: [PandocElement::Block, PandocElement::Enum], conversions: { attributes: PandocElement::Attr } }],
     ['Null',                                                             { include: [PandocElement::Block] }],
     ['Str',            :value,                                           { include: [PandocElement::Inline] }],
-    ['Emph',           :elements,                                        { include: [PandocElement::Inline] }],
-    ['Strong',         :elements,                                        { include: [PandocElement::Inline] }],
-    ['Strikeout',      :elements,                                        { include: [PandocElement::Inline] }],
-    ['Superscript',    :elements,                                        { include: [PandocElement::Inline] }],
-    ['Subscript',      :elements,                                        { include: [PandocElement::Inline] }],
-    ['SmallCaps',      :elements,                                        { include: [PandocElement::Inline] }],
-    ['Quoted',         :type, :elements,                                 { include: [PandocElement::Inline] }],
-    ['Cite',           :citations, :elements,                            { include: [PandocElement::Inline] }],
+    ['Emph',           :elements,                                        { include: [PandocElement::Inline, PandocElement::Enum] }],
+    ['Strong',         :elements,                                        { include: [PandocElement::Inline, PandocElement::Enum] }],
+    ['Strikeout',      :elements,                                        { include: [PandocElement::Inline, PandocElement::Enum] }],
+    ['Superscript',    :elements,                                        { include: [PandocElement::Inline, PandocElement::Enum] }],
+    ['Subscript',      :elements,                                        { include: [PandocElement::Inline, PandocElement::Enum] }],
+    ['SmallCaps',      :elements,                                        { include: [PandocElement::Inline, PandocElement::Enum] }],
+    ['Quoted',         :type, :elements,                                 { include: [PandocElement::Inline, PandocElement::Enum] }],
+    ['Cite',           :citations, :elements,                            { include: [PandocElement::Inline, PandocElement::Enum] }],
     ['Code',           :attributes, :value,                              { include: [PandocElement::Inline], conversions: { attributes: PandocElement::Attr } }],
     ['Space',                                                            { include: [PandocElement::Inline] }],
     ['SoftBreak',                                                        { include: [PandocElement::Inline] }],
     ['LineBreak',                                                        { include: [PandocElement::Inline] }],
     ['Math',           :type, :value,                                    { include: [PandocElement::Inline] }],
     ['RawInline',      :format, :value,                                  { include: [PandocElement::Inline] }],
-    ['Link',           :attributes, :elements, :target,                  { include: [PandocElement::Inline], conversions: { attributes: PandocElement::Attr, target: PandocElement::Target } }],
-    ['Image',          :attributes, :elements, :target,                  { include: [PandocElement::Inline], conversions: { attributes: PandocElement::Attr, target: PandocElement::Target } }],
-    ['Note',           :elements,                                        { include: [PandocElement::Inline] }],
-    ['Span',           :attributes, :elements,                           { include: [PandocElement::Inline], conversions: { attributes: PandocElement::Attr } }]
+    ['Link',           :attributes, :elements, :target,                  { include: [PandocElement::Inline, PandocElement::Enum], conversions: { attributes: PandocElement::Attr, target: PandocElement::Target } }],
+    ['Image',          :attributes, :elements, :target,                  { include: [PandocElement::Inline, PandocElement::Enum], conversions: { attributes: PandocElement::Attr, target: PandocElement::Target } }],
+    ['Note',           :elements,                                        { include: [PandocElement::Inline, PandocElement::Enum] }],
+    ['Span',           :attributes, :elements,                           { include: [PandocElement::Inline, PandocElement::Enum], conversions: { attributes: PandocElement::Attr } }]
   ].each do |name, *params|
     name.freeze
 
