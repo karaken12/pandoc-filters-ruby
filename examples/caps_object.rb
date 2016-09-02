@@ -8,6 +8,5 @@ require 'pandoc-filter'
 PandocElement.filter do |element|
   if element.kind_of?(PandocElement::Str)
     element.value.upcase!
-    nil
   end
 end

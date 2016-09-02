@@ -106,6 +106,10 @@ module PandocElement
     PandocElement::Filter.new(input, output, argv, &block).filter
   end
 
+  def self.filter!(input = $stdin, output = $stdout, argv = ARGV, &block)
+    PandocElement::Filter.new(input, output, argv, &block).filter!
+  end
+
   class Filter
     attr_accessor :doc, :format, :meta
 
@@ -117,11 +121,24 @@ module PandocElement
     end
 
     def filter(&block)
+      process(block) do
+        PandocElement.walk(@doc, &@block)
+        @doc
+      end
+    end
+
+    def filter!(&block)
+      process(block) { PandocElement.walk!(@doc, &@block) }
+    end
+
+    private
+
+    def process(block)
       @block = block unless @block
       @doc = PandocElement::Document.new(JSON.parse(@input.read))
       @format = @argv.first
       @meta = @doc.meta
-      result = PandocElement.walk!(@doc, &@block)
+      result = yield
       @output.puts JSON.dump(PandocElement.to_ast(result))
     end
   end

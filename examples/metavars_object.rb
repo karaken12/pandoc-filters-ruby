@@ -8,7 +8,7 @@ require 'pandoc-filter'
 
 filter = PandocElement::Filter.new
 
-filter.filter do |element|
+filter.filter! do |element|
   if element.kind_of?(PandocElement::Str)
     match = /%\{(.*)\}$/.match(element.value)
 

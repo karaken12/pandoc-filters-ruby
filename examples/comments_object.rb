@@ -4,7 +4,7 @@ require 'pandoc-filter'
 
 incomment = false
 
-PandocElement.filter do |element|
+PandocElement.filter! do |element|
   if element.kind_of?(PandocElement::RawBlock)
     if element.format == 'html'
       if /<!-- BEGIN COMMENT -->/.match(element.value)

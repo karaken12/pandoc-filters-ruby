@@ -63,7 +63,6 @@ class ObjectFiltersTest < Minitest::Test
     filter.filter do |element|
       next unless element.kind_of?(PandocElement::Header)
       element.elements = [PandocElement::Str.new(filter.format)]
-      element
     end
 
     expected_ast = to_pandoc_ast <<-EOF
@@ -91,7 +90,6 @@ class ObjectFiltersTest < Minitest::Test
     filter.filter do |element|
       next unless element.kind_of?(PandocElement::Header)
       element.elements = filter.meta["header"].contents
-      element
     end
 
     expected_ast = to_pandoc_ast <<-EOF

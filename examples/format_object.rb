@@ -11,6 +11,5 @@ filter = PandocElement::Filter.new
 filter.filter do |element|
   if element.kind_of?(PandocElement::Str) && element.value == '%{format}'
     element.value = filter.format
-    element
   end
 end
