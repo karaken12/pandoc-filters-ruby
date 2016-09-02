@@ -106,7 +106,7 @@ module PandocElement
   end
 
   class Filter
-    attr_accessor :format, :meta
+    attr_accessor :doc, :format, :meta
 
     def initialize(input = $stdin, output = $stdout, &block)
       @input = input
@@ -114,11 +114,12 @@ module PandocElement
       @block = block
     end
 
-    def filter
-      doc = PandocElement::Document.new(JSON.parse(@input.read))
+    def filter(&block)
+      @block = block unless @block
+      @doc = PandocElement::Document.new(JSON.parse(@input.read))
       @format = ARGV.first
-      @meta = doc.meta
-      result = PandocElement.walk!(doc, &@block)
+      @meta = @doc.meta
+      result = PandocElement.walk!(@doc, &@block)
       @output.puts JSON.dump(PandocElement.to_ast(result))
     end
   end

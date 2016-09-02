@@ -6,18 +6,20 @@
 
 require 'pandoc-filter'
 
-PandocElement.filter do |element|
+filter = PandocElement::Filter.new
+
+filter.filter do |element|
   if element.kind_of?(PandocElement::Str)
     match = /%\{(.*)\}$/.match(element.value)
 
     if match
       field = match[1]
-      result = meta[field]
+      result = filter.meta[field]
 
-      if result['t'] == 'MetaInlines'
-        next PandocElement.Span(['', ['interpolated'], [['field', field]]], result['c'])
-      elsif result['t'] == 'MetaString'
-        next PandocElement.Str(result['c'])
+      if result.kind_of?(PandocElement::MetaInlines)
+        next PandocElement::Span.new([PandocElement::Attr.build(classes: ['interpolated'], key_values: { 'field' => field }), result.elements])
+      elsif result.kind_of?(PandocElement::MetaString)
+        next PandocElement.Str(result.value)
       end
     end
   end

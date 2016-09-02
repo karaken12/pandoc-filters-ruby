@@ -114,6 +114,32 @@ class ExamplesTest < Minitest::Test
     EOF
 
     assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars.rb", __FILE__)))
-    #assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars_object.rb", __FILE__)))
+    assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars_object.rb", __FILE__)))
+  end
+
+  def test_metavars_with_meta_string
+    doc = <<-EOF
+      ---
+      author: 42
+      ---
+
+      # %{author}
+
+      This was written by %{author}
+    EOF
+
+    expected_result = strip_whitespace <<-EOF
+      ---
+      author: 42
+      ...
+
+      42 {#author}
+      ==
+
+      This was written by 42
+    EOF
+
+    assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars.rb", __FILE__)))
+    assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars_object.rb", __FILE__)))
   end
 end
