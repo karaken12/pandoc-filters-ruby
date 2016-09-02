@@ -9,19 +9,20 @@ require 'json'
 class PandocFilter
   attr_accessor :format, :meta
 
-  def initialize(input = $stdin, output = $stdout, &block)
+  def initialize(input = $stdin, output = $stdout, argv = ARGV, &block)
     @input = input
     @output = output
+    @argv = argv
     @block = block
   end
 
-  def self.filter(input = $stdin, output = $stdout, &block)
-    new(input, output, &block).filter
+  def self.filter(input = $stdin, output = $stdout, argv = ARGV, &block)
+    new(input, output, argv, &block).filter
   end
 
   def filter
     doc = JSON.parse(@input.read)
-    @format = ARGV.first
+    @format = @argv.first
     @meta = doc[0]['unMeta']
     @output.puts JSON.dump(walk(doc))
   end
@@ -101,23 +102,24 @@ module PandocElement
     PandocElement::Walker.new(object, &block).walk!
   end
 
-  def self.filter(input = $stdin, output = $stdout, &block)
-    PandocElement::Filter.new(input, output, &block).filter
+  def self.filter(input = $stdin, output = $stdout, argv = ARGV, &block)
+    PandocElement::Filter.new(input, output, argv, &block).filter
   end
 
   class Filter
     attr_accessor :doc, :format, :meta
 
-    def initialize(input = $stdin, output = $stdout, &block)
+    def initialize(input = $stdin, output = $stdout, argv = ARGV, &block)
       @input = input
       @output = output
+      @argv = argv
       @block = block
     end
 
     def filter(&block)
       @block = block unless @block
       @doc = PandocElement::Document.new(JSON.parse(@input.read))
-      @format = ARGV.first
+      @format = @argv.first
       @meta = @doc.meta
       result = PandocElement.walk!(@doc, &@block)
       @output.puts JSON.dump(PandocElement.to_ast(result))

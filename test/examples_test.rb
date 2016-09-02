@@ -142,4 +142,30 @@ class ExamplesTest < Minitest::Test
     assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars.rb", __FILE__)))
     assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/metavars_object.rb", __FILE__)))
   end
+
+  def test_format_to_markdown
+    doc = <<-EOF
+      This document was converted to %{format}
+    EOF
+
+    expected_result = strip_whitespace <<-EOF
+      This document was converted to markdown
+    EOF
+
+    assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/format.rb", __FILE__)))
+    assert_equal(expected_result, pandoc(doc, filter: File.expand_path("../../examples/format_object.rb", __FILE__)))
+  end
+
+  def test_format_to_markdown_github
+    doc = <<-EOF
+      This document was converted to %{format}
+    EOF
+
+    expected_result = strip_whitespace <<-EOF
+      This document was converted to markdown\\_github
+    EOF
+
+    assert_equal(expected_result, pandoc(doc, to: "markdown_github", filter: File.expand_path("../../examples/format.rb", __FILE__)))
+    assert_equal(expected_result, pandoc(doc, to: "markdown_github", filter: File.expand_path("../../examples/format_object.rb", __FILE__)))
+  end
 end

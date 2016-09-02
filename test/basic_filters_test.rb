@@ -50,6 +50,58 @@ class BasicFiltersTest < Minitest::Test
     assert_equal(expected_ast, stream_to_ast(output))
   end
 
+  def test_filter_using_format
+    ast = to_pandoc_ast <<-EOF
+      # Header
+
+      This is a paragraph
+    EOF
+
+    output = StringIO.new
+
+    PandocFilter.filter(ast_to_stream(ast), output, %w(markdown)) do |type, value, format, _meta|
+      next unless type == 'Header'
+      PandocElement.Header(value[0], value[1], [{ 't' => 'Str', 'c' => format }])
+    end
+
+    expected_ast = to_pandoc_ast <<-EOF
+      # markdown {#header}
+
+      This is a paragraph
+    EOF
+
+    assert_equal(expected_ast, stream_to_ast(output))
+  end
+
+  def test_filter_using_meta
+    ast = to_pandoc_ast <<-EOF
+      ---
+      header: New Header
+      ---
+      # Header
+
+      This is a paragraph
+    EOF
+
+    output = StringIO.new
+
+    PandocFilter.filter(ast_to_stream(ast), output) do |type, value, _format, meta|
+      next unless type == 'Header'
+      PandocElement.Header(value[0], value[1], meta['header']['c'])
+    end
+
+    expected_ast = to_pandoc_ast <<-EOF
+      ---
+      header: New Header
+      ---
+      # New Header {#header}
+
+      This is a paragraph
+    EOF
+
+    assert_equal(expected_ast, stream_to_ast(output))
+  end
+
   private
 
   def upcase_if_str_node(node)
